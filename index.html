@@ -57,69 +57,105 @@
     </div>
   </div>
   <script>
-  alert('LONGG TEMPESTADE!')
-    const PARTICIPANTES = ['Litlegot','Psique','Abrax','Hell Cat','Yellowfer','Beast'];
+    alert('LONGG TEMPESTADE!');
+
+    const PARTICIPANTES = ['Litlegot','Psique','Abrax','Hell Cat','Yellowfer','lindemberg'];
     const ME = 'Beast';
     const channel = new BroadcastChannel('global_channel');
-    const _load=k=>JSON.parse(localStorage.getItem(k)||'[]');
-    const _save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 
-    channel.onmessage=ev=>{
-      const {type,data}=ev.data;
-      if(type==='msg'&&data.to===ME) alert(`📨 De ${data.from}: ${data.text}`);
-      if(type==='power'&&data.to===ME){
+    const _load = k => JSON.parse(localStorage.getItem(k) || '[]');
+    const _save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+
+    const hitLogKey = 'hitLog'; // lista de alvos atingidos por Beast
+
+    channel.onmessage = ev => {
+      const {type, data} = ev.data;
+      if(type === 'msg' && data.to === ME)
+        alert(`📨 De ${data.from}: ${data.text}`);
+
+      if(type === 'power' && data.to === ME){
         savePower(data);
         alert(`🔮 Recebeu: ${data.power} de ${data.from}`);
       }
-      if(type==='usePower'&&data.to===ME){
+
+      if(type === 'usePower' && data.to === ME){
         alert(`✨ ${data.from} usou "${data.power}" em você!`);
+      }
+
+      if(type === 'resetHit'){
+        const log = _load(hitLogKey).filter(x => x.name !== data.target);
+        _save(hitLogKey, log);
+        alert(`♻️ ${data.target} foi liberado pelo portador da Cobra.`);
       }
     };
 
     function enviarMensagem(){
-      let dest=prompt(`Enviar para?\n${PARTICIPANTES.filter(p=>p!==ME).join(', ')}`);
-      if(!PARTICIPANTES.includes(dest)||dest===ME) return alert('Inválido.');
-      let txt=prompt(`Mensagem de ${ME} p/ ${dest}:`);
+      let dest = prompt(`Enviar para?\n${PARTICIPANTES.filter(p=>p!==ME).join(', ')}`);
+      if(!PARTICIPANTES.includes(dest) || dest === ME) return alert('Inválido.');
+      let txt = prompt(`Mensagem de ${ME} p/ ${dest}:`);
       if(!txt) return;
-      const m={from:ME,to:dest,text:txt.trim()};
-      const msgs=_load('msgs'); msgs.push(m); _save('msgs',msgs);
-      channel.postMessage({type:'msg',data:m});
+      const m = {from:ME, to:dest, text:txt.trim()};
+      const msgs = _load('msgs'); msgs.push(m); _save('msgs',msgs);
+      channel.postMessage({type:'msg', data:m});
       alert('Enviado!');
     }
+
     function lerConversa(){
-      let peer=prompt(`Conversa com?\n${PARTICIPANTES.filter(p=>p!==ME).join(', ')}`);
-      if(!PARTICIPANTES.includes(peer)||peer===ME) return alert('Inválido.');
-      const msgs=_load('msgs').filter(m=>(m.from===ME&&m.to===peer)||(m.from===peer&&m.to===ME));
+      let peer = prompt(`Conversa com?\n${PARTICIPANTES.filter(p=>p!==ME).join(', ')}`);
+      if(!PARTICIPANTES.includes(peer) || peer === ME) return alert('Inválido.');
+      const msgs = _load('msgs').filter(m=>(m.from===ME && m.to===peer)||(m.from===peer && m.to===ME));
       if(!msgs.length) return alert('Sem mensagens.');
       alert(msgs.map(m=>`${m.from}: ${m.text}`).join('\n'));
     }
+
     function concederPoder(){
-      let dest=prompt(`qual sera o alvo?\n${PARTICIPANTES.filter(p=>p!==ME).join(', ')}`);
-      if(!PARTICIPANTES.includes(dest)||dest===ME) return alert('Inválido.');
-      let pow=prompt('qual dragão?');
+      let dest = prompt(`qual sera o alvo?\n${PARTICIPANTES.filter(p=>p!==ME).join(', ')}`);
+      if(!PARTICIPANTES.includes(dest) || dest === ME) return alert('Inválido.');
+      let pow = prompt('qual dragão?');
       if(!pow) return;
-      const p={from:ME,to:dest,power:pow.trim()};
+      const p = {from:ME, to:dest, power:pow.trim()};
       savePower(p);
-      channel.postMessage({type:'power',data:p});
+      channel.postMessage({type:'power', data:p});
       alert(`Concedeu "${pow.trim()}" a ${dest}`);
     }
+
     function savePower(p){
-      const ps=_load('powers'); ps.push(p); _save('powers',ps);
+      const ps = _load('powers'); ps.push(p); _save('powers', ps);
     }
+
     function verPoderes(){
-      const ps=_load('powers').filter(p=>p.to===ME);
+      const ps = _load('powers').filter(p => p.to === ME);
       if(!ps.length) return alert('Sem poderes.');
       alert(ps.map((p,i)=>`${i+1}. ${p.power} (de ${p.from})`).join('\n'));
     }
+
     function usarPoder(){
+      const alvos = PARTICIPANTES.filter(p => p !== ME && p !== 'Cobra');
+      let alvo = prompt(`Escolha um alvo:\n${alvos.join(', ')}`);
+      if(!alvos.includes(alvo)) return alert('Inválido.');
+      
+      let elemento = prompt('Qual elemento?\n1. Raio (1h)\n2. Água (30min)\n3. Vento (15min)');
+      const tempo = {'1':'1h','2':'30min','3':'15min'}[elemento];
+      const elementoNome = {'1':'Raio','2':'Água','3':'Vento'}[elemento];
+
+      if(!tempo) return alert('Elemento inválido.');
+
+      const log = _load(hitLogKey);
+      if(log.some(x => x.name === alvo)) return alert(`${alvo} já foi atingido. Aguarde o portador da Cobra reiniciar.`);
+
+      log.push({name:alvo, element:elementoNome, time:Date.now()});
+      _save(hitLogKey, log);
+
       showElements();
-      alert('🌪️ Beast controlou água, ar e raio!');
-      channel.postMessage({type:'usePower',data:{from:ME,to:null,power:'Elementos: água, ar, raio'}});
+      alert(`🌪️ ${ME} usou ${elementoNome} em ${alvo} (${tempo})`);
+      channel.postMessage({type:'usePower', data:{from:ME, to:alvo, power:elementoNome}});
     }
+
     function showElements(){
-      const e=document.createElement('div');
-      e.className='elements'; document.body.appendChild(e);
-      setTimeout(()=>e.remove(),1000);
+      const e = document.createElement('div');
+      e.className = 'elements';
+      document.body.appendChild(e);
+      setTimeout(() => e.remove(), 1000);
     }
   </script>
 </body>
