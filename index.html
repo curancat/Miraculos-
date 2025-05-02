@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Miraculos do Dragão</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Lobster&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0}
+    body {
+      background:#220000;color:#FFF;
+      font-family:'Lobster',cursive;
+      display:flex;align-items:center;justify-content:center;
+      height:100vh;position:relative;
+    }
+    .phone {
+      width:320px;height:600px;
+      background:#440000;border-radius:30px;
+      box-shadow:0 10px 25px rgba(255,0,0,0.6);
+      padding:20px;display:flex;
+      flex-direction:column;justify-content:space-between;
+    }
+    h3 mark {
+      background:#FFD700;color:#000;
+      padding:5px 10px;border-radius:8px;
+    }
+    h3{text-align:center;font-size:24px}
+    .buttons{display:flex;flex-direction:column;align-items:center;gap:8px}
+    button{
+      width:80%;padding:10px;
+      background:#FF4500;border:none;
+      border-radius:20px;font-size:18px;
+      color:#fff;cursor:pointer;transition:.3s;
+      font-family:'Lobster',cursive;
+    }
+    button:hover{background:#FF6347}
+    .elements {
+      position:absolute;top:0;left:0;width:100%;height:100%;
+      background:linear-gradient(45deg,
+        rgba(0,0,255,0.4),
+        rgba(255,255,255,0.4),
+        rgba(255,255,0,0.4),
+        rgba(0,255,255,0.4));
+      animation:fade 1s forwards;
+    }
+    @keyframes fade{from{opacity:1}to{opacity:0}}
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <h3><mark>Beast</mark></h3>
+    <div class="buttons">
+      <button onclick="enviarMensagem()">💬 Enviar mensagem</button>
+      <button onclick="lerConversa()">📖 Ler conversa</button>
+      <button onclick="concederPoder()">✨ Invocar dragão</button>
+      <button onclick="verPoderes()">💼 Meus Poderes</button>
+      <button onclick="usarPoder()">🌪️ Dragão de...</button>
+    </div>
+  </div>
+  <script>
+  alert('LONGG TEMPESTADE!')
+    const PARTICIPANTES = ['Litlegot','Psique','Abrax','Hell Cat','Yellowfer','Beast'];
+    const ME = 'Beast';
+    const channel = new BroadcastChannel('global_channel');
+    const _load=k=>JSON.parse(localStorage.getItem(k)||'[]');
+    const _save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+
+    channel.onmessage=ev=>{
+      const {type,data}=ev.data;
+      if(type==='msg'&&data.to===ME) alert(`📨 De ${data.from}: ${data.text}`);
+      if(type==='power'&&data.to===ME){
+        savePower(data);
+        alert(`🔮 Recebeu: ${data.power} de ${data.from}`);
+      }
+      if(type==='usePower'&&data.to===ME){
+        alert(`✨ ${data.from} usou "${data.power}" em você!`);
+      }
+    };
+
+    function enviarMensagem(){
+      let dest=prompt(`Enviar para?\n${PARTICIPANTES.filter(p=>p!==ME).join(', ')}`);
+      if(!PARTICIPANTES.includes(dest)||dest===ME) return alert('Inválido.');
+      let txt=prompt(`Mensagem de ${ME} p/ ${dest}:`);
+      if(!txt) return;
+      const m={from:ME,to:dest,text:txt.trim()};
+      const msgs=_load('msgs'); msgs.push(m); _save('msgs',msgs);
+      channel.postMessage({type:'msg',data:m});
+      alert('Enviado!');
+    }
+    function lerConversa(){
+      let peer=prompt(`Conversa com?\n${PARTICIPANTES.filter(p=>p!==ME).join(', ')}`);
+      if(!PARTICIPANTES.includes(peer)||peer===ME) return alert('Inválido.');
+      const msgs=_load('msgs').filter(m=>(m.from===ME&&m.to===peer)||(m.from===peer&&m.to===ME));
+      if(!msgs.length) return alert('Sem mensagens.');
+      alert(msgs.map(m=>`${m.from}: ${m.text}`).join('\n'));
+    }
+    function concederPoder(){
+      let dest=prompt(`qual sera o alvo?\n${PARTICIPANTES.filter(p=>p!==ME).join(', ')}`);
+      if(!PARTICIPANTES.includes(dest)||dest===ME) return alert('Inválido.');
+      let pow=prompt('qual dragão?');
+      if(!pow) return;
+      const p={from:ME,to:dest,power:pow.trim()};
+      savePower(p);
+      channel.postMessage({type:'power',data:p});
+      alert(`Concedeu "${pow.trim()}" a ${dest}`);
+    }
+    function savePower(p){
+      const ps=_load('powers'); ps.push(p); _save('powers',ps);
+    }
+    function verPoderes(){
+      const ps=_load('powers').filter(p=>p.to===ME);
+      if(!ps.length) return alert('Sem poderes.');
+      alert(ps.map((p,i)=>`${i+1}. ${p.power} (de ${p.from})`).join('\n'));
+    }
+    function usarPoder(){
+      showElements();
+      alert('🌪️ Beast controlou água, ar e raio!');
+      channel.postMessage({type:'usePower',data:{from:ME,to:null,power:'Elementos: água, ar, raio'}});
+    }
+    function showElements(){
+      const e=document.createElement('div');
+      e.className='elements'; document.body.appendChild(e);
+      setTimeout(()=>e.remove(),1000);
+    }
+  </script>
+</body>
+</html>
