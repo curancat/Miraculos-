@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Miraculous do Dragão - Beast</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Lobster&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #220000;
+      color: #FFF;
+      font-family: 'Lobster', cursive;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      position: relative;
+    }
+    .phone {
+      width: 320px;
+      height: 600px;
+      background: #440000;
+      border-radius: 30px;
+      box-shadow: 0 10px 25px rgba(255, 0, 0, 0.6);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    h3 mark {
+      background: #FFD700;
+      color: #000;
+      padding: 5px 10px;
+      border-radius: 8px;
+    }
+    h3 { text-align: center; font-size: 24px; }
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    button {
+      width: 80%;
+      padding: 10px;
+      background: #FF4500;
+      border: none;
+      border-radius: 20px;
+      font-size: 18px;
+      color: #fff;
+      cursor: pointer;
+      transition: .3s;
+      font-family: 'Lobster', cursive;
+    }
+    button:hover { background: #FF6347; }
+    .elements {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg,
+        rgba(0, 0, 255, 0.4),
+        rgba(255, 255, 255, 0.4),
+        rgba(255, 255, 0, 0.4),
+        rgba(0, 255, 255, 0.4));
+      animation: fade 1s forwards;
+    }
+    @keyframes fade { from { opacity: 1; } to { opacity: 0; } }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <h3><mark>Beast</mark></h3>
+    <div class="buttons">
+      <button onclick="enviarMensagem()">💬 Enviar mensagem</button>
+      <button onclick="lerConversa()">📖 Ler conversa</button>
+      <button onclick="usarPoder()">🌩️ Dragão de...</button>
+      <button onclick="verEfeitos()">🔒 Ver Efeitos Ativos</button>
+    </div>
+  </div>
+  <script>
+    alert('LONGG TEMPESTADE!');
+    const PARTICIPANTES = ['Litlegot', 'Psique', 'Abrax', 'Hell Cat', 'Yellowfer', 'Beast', 'Lindemberg'];
+    const ME = 'Beast';
+    const channel = new BroadcastChannel('global_channel');
+
+    // Funções para localStorage com expiração
+    function setWithExpiry(key, value, ttl) {
+      const now = Date.now();
+      const item = {
+        value: value,
+        expiry: now + ttl,
+      };
+      localStorage.setItem(key, JSON.stringify(item));
+    }
+
+    function getWithExpiry(key) {
+      const itemStr = localStorage.getItem(key);
+      if (!itemStr) {
+        return null;
+      }
+      const item = JSON.parse(itemStr);
+      const now = Date.now();
+      if (now > item.expiry) {
+        localStorage.removeItem(key);
+        return null;
+      }
+      return item.value;
+    }
+
+    function removeItem(key) {
+      localStorage.removeItem(key);
+    }
+
+    // Gerenciar efeitos ativos
+    function adicionarEfeito(alvo, elemento, duracao) {
+      const efeitos = JSON.parse(localStorage.getItem('efeitos') || '{}');
+      if (!efeitos[alvo]) {
+        efeitos[alvo] = {};
+      }
+      const agora = Date.now();
+      efeitos[alvo][elemento] = agora + duracao;
+      localStorage.setItem('efeitos', JSON.stringify(efeitos));
+    }
+
+    function obterEfeitos() {
+      const efeitos = JSON.parse(localStorage.getItem('efeitos') || '{}');
+      const agora = Date.now();
+      for (const alvo in efeitos) {
+        for (const elemento in efeitos[alvo]) {
+          if (efeitos[alvo][elemento] < agora) {
+            delete efeitos[alvo][elemento];
+          }
+        }
+        if (Object.keys(efeitos[alvo]).length === 0) {
+          delete efeitos[alvo];
+        }
+      }
+      localStorage.setItem('efeitos', JSON.stringify(efeitos));
+      return efeitos;
+    }
+
+    // Comunicação via BroadcastChannel
+    channel.onmessage = (ev) => {
+      const { type, data } = ev.data;
+      if (type === 'msg' && data.to === ME) {
+        alert(`📨 De ${data.from}: ${data.text}`);
+      }
+      if (type === 'reset' && data.to === ME) {
+        localStorage.removeItem('efeitos');
+        alert('🔄 Seus efeitos foram resetados pelo Miraculous da Cobra!');
+      }
+    };
+
+    function enviarMensagem() {
+      const efeitos = obterEfeitos();
+      if (efeitos[ME]) {
+        alert('⚠️ Você está bloqueado e não pode enviar mensagens.');
+        return;
+      }
+      let dest = prompt(`Enviar para quem?\n${PARTICIPANTES.filter(p => p !== ME).join(', ')}`);
+      if (!PARTICIPANTES.includes(dest) || dest === ME) return alert('Destino inválido.');
+      let txt = prompt(`Mensagem de ${ME} para ${dest}:`);
+      if (!txt || !txt.trim()) return;
+      const msg = { from: ME, to: dest, text: txt.trim() };
+      channel.postMessage({ type: 'msg', data: msg });
+      alert('Mensagem enviada!');
+    }
+
+    function lerConversa() {
+      let peer = prompt(`Ler conversa com?\n${PARTICIPANTES.filter(p => p !== ME).join(', ')}`);
+      if (!PARTICIPANTES.includes(peer) || peer === ME) return alert('Participante inválido.');
+      alert('Funcionalidade de leitura de conversa ainda não implementada.');
+    }
+
+    function usarPoder() {
+      const efeitos = obterEfeitos();
+      if (efeitos[ME]) {
+        alert('⚠️ Você está bloqueado e não pode usar poderes.');
+        return;
+      }
+      let dest = prompt(`Usar poder em quem?\n${PARTICIPANTES.filter(p => p !== ME).join(', ')}`);
+      if (!PARTICIPANTES.includes(dest) || dest === ME) return alert('Destino inválido.');
+      const elementos = { 'Raio': 3600000, 'Água': 1800000, 'Ar': 900000 };
+      let elemento = prompt('Escolha o elemento: Raio, Água ou Ar');
+      if (!elementos[elemento]) return alert('Elemento inválido.');
+      const efeitosAtuais = obterEfeitos();
+      if (efeitosAtuais[dest] && efeitosAtuais[dest][elemento]) {
+        alert('⚠️ Este alvo já foi atingido por este elemento. Aguarde o tempo de bloqueio ou use o Miraculous da Cobra para resetar.');
+        return;
+      }
+      adicionarEfeito(dest, elemento, elementos[elemento]);
+      channel.postMessage({ type: 'efeitodragao', data: { from: ME, to: dest, elemento: elemento, duracao: elementos[elemento] } });
+      alert(`✨ Você usou o poder de ${elemento} em ${dest}.`);
+    }
+
+    function verEfeitos() {
+      const efeitos = obterEfeitos();
+      if (!efeitos[ME]) {
+        alert('✅ Você não está sob efeito de nenhum poder.');
+        return;
+      }
+      let msg = '⏳ Efeitos ativos em você:\n';
+      for (const elemento in efeitos[ME]) {
+        const tempoRestante = efeitos[ME][elemento] - Date.now();
+        msg += `- ${elemento}: ${Math.ceil(tempoRestante / 60000)} minutos restantes\n`;
+      }
+      alert(msg);
+    }
+  </script>
+</body>
+</html>
